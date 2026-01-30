@@ -26,3 +26,28 @@ Quick start
 4. Start the development server and visit the admin to create a poll.
 
 5. Visit the ``/polls/`` URL to participate in the poll.
+
+JSON API
+--------
+
+This app also exposes a lightweight JSON API under the ``/polls/api/``
+prefix. The API mirrors the HTML views and is useful for single-page apps
+or integrations.
+
+- GET /polls/api/ - list published polls (id, question_text, pub_date)
+- GET /polls/api/<id>/ - poll detail with choices
+- POST /polls/api/<id>/vote/ - submit a vote using JSON body: ``{"choice_id": <id>}``
+- GET /polls/api/<id>/results/ - poll results (choice_text and votes)
+
+Notes
+-----
+
+- The API only exposes polls whose ``pub_date`` is in the past (no future
+  polls are returned).
+- The project uses the standard Django testing framework. Run the app
+  tests with::
+
+    python manage.py test
+
+- Add a virtual environment, install Django, and run migrations before
+  starting the server.
