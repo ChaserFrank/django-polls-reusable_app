@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django.test import TestCase
 from django.utils import timezone
@@ -103,6 +104,7 @@ class QuestionIndexViewTests(TestCase):
             [question2, question1],
         )
 
+
 class QuestionDetailViewTests(TestCase):
     def test_future_question(self):
         """
@@ -123,3 +125,33 @@ class QuestionDetailViewTests(TestCase):
         url = reverse("polls:detail", args=(past_question.id,))
         response = self.client.get(url)
         self.assertContains(response, past_question.question_text)
+
+
+class QuestionAPITests(TestCase):
+    def test_api_index_lists_past_questions(self):
+        q = create_question("Past API question.", days=-1)
+        url = reverse("polls:api_index")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("polls", data)
+        self.assertTrue(any(p["id"] == q.id for p in data["polls"]))
+
+    def test_api_detail_future_question_returns_404(self):
+        future_q = create_question("Future API question.", days=5)
+        url = reverse("polls:api_detail", args=(future_q.id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_api_vote_increments_choice(self):
+        q = create_question("Vote API question.", days=-1)
+        choice = q.choice_set.create(choice_text="A", votes=0)
+        url = reverse("polls:api_vote", args=(q.id,))
+        resp = self.client.post(url, data=json.dumps({"choice_id": choice.id}), content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data.get("status"), "ok")
+        # refresh from db
+        choice.refresh_from_db()
+        self.assertEqual(choice.votes, 1)
+
